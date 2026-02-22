@@ -230,41 +230,41 @@ When using GROUP BY, the default COUNT gives wrong results. Use modifyCountQuery
 ```javascript
 const BASE_WITH_GROUP = `
   SELECT /*SELECT_COLUMNS*/
-  FROM r2r_emails em
-  LEFT JOIN r2r_regions r ON em.region_id = r.id
-  JOIN r2r_work_queue wq ON wq.id = em.wq_id
-  JOIN r2r_work_queue_case_mapping wqcm ON wqcm.wq_id = wq.id
+  FROM app_messages msg
+  LEFT JOIN app_locations loc ON msg.location_id = loc.id
+  JOIN app_tasks task ON task.id = msg.task_id
+  JOIN app_task_case_link tcl ON tcl.task_id = task.id
   JOIN (
-    SELECT DISTINCT wq_id, case_id, company_code
-    FROM r2r_process_output_model WHERE is_latest = true
-  ) pom ON pom.wq_id = wqcm.wq_id AND pom.case_id = wqcm.case_id
+    SELECT DISTINCT task_id, case_ref, org_code
+    FROM app_case_snapshot WHERE is_current = true
+  ) cs ON cs.task_id = tcl.task_id AND cs.case_ref = tcl.case_ref
   /*WHERE_CLAUSE*/
-  GROUP BY DATE(wq.created_date), pom.company_code, em.structured
+  GROUP BY DATE(task.created_at), cs.org_code, msg.is_structured
   /*HAVING_CLAUSE*/
   /*ORDER_BY*/ /*LIMIT_CLAUSE*/
 `;
 
 const columnMapper = {
-  createdDate: 'DATE(wq.created_date)',
-  companyCode: 'pom.company_code',
-  structured:  'em.structured',
-  emailCount:  'COUNT(em.id)',
-  regionName:  'r.name',
-  status:      'em.status',
+  createdDate: 'DATE(task.created_at)',
+  organizationCode: 'cs.org_code',
+  structured:  'msg.is_structured',
+  messageCount:  'COUNT(msg.id)',
+  locationName:  'loc.display_name',
+  state:      'msg.state',
 };
 
 const result = buildQueries({
   baseQueryTemplate: BASE_WITH_GROUP,
   columnMapper,
-  selectColumns: ['createdDate', 'companyCode', 'structured', 'emailCount'],
+  selectColumns: ['createdDate', 'organizationCode', 'structured', 'messageCount'],
   whereParams: [
-    { key: 'status', operation: 'EQ', value: 'PROCESSED' },
-    { key: 'regionName', operation: 'NOT_NULL' },
-    { key: 'emailCount', operation: 'GT', value: 10, having: true },
+    { key: 'state', operation: 'EQ', value: 'PROCESSED' },
+    { key: 'locationName', operation: 'NOT_NULL' },
+    { key: 'messageCount', operation: 'GT', value: 10, having: true },
   ],
   sortBy: [
     { key: 'createdDate', direction: 'DESC' },
-    { key: 'emailCount', direction: 'DESC' },
+    { key: 'messageCount', direction: 'DESC' },
   ],
   page: 1,
   size: 20,
@@ -275,10 +275,17 @@ const result = buildQueries({
 
 // countQuery:
 // SELECT COUNT(*) AS count FROM (
-//   SELECT 1 FROM r2r_emails em ...
-//   WHERE em.status = $1 AND r.name IS NOT NULL
-//   GROUP BY DATE(wq.created_date), pom.company_code, em.structured
-//   HAVING COUNT(em.id) > $2
+//   SELECT 1 FROM app_messages msg
+//   LEFT JOIN app_locations loc ON msg.location_id = loc.id
+//   JOIN app_tasks task ON task.id = msg.task_id
+//   JOIN app_task_case_link tcl ON tcl.task_id = task.id
+//   JOIN (
+//     SELECT DISTINCT task_id, case_ref, org_code
+//     FROM app_case_snapshot WHERE is_current = true
+//   ) cs ON cs.task_id = tcl.task_id AND cs.case_ref = tcl.case_ref
+//   WHERE msg.state = $1 AND loc.display_name IS NOT NULL
+//   GROUP BY DATE(task.created_at), cs.org_code, msg.is_structured
+//   HAVING COUNT(msg.id) > $2
 // ) AS grouped_count
 ```
 
