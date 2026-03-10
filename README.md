@@ -1,15 +1,15 @@
 # sql-flex-query
 
-A lightweight, dialect-aware SQL query builder that enhances base query templates with dynamic WHERE, HAVING, ORDER BY, pagination, and more.
+A lightweight, dialect-aware SQL query builder that enhances base query templates with dynamic WHERE, HAVING, ORDER BY, pagination, and more. Also provides helpers for building INSERT, UPDATE, and DELETE queries with dialect-specific placeholders.
 
 ## Supported Databases
 
-| Database | Placeholders | Identifier Quoting | Pagination |
-|----------|-------------|-------------------|------------|
-| PostgreSQL | `$1, $2` | `"double quotes"` | `LIMIT/OFFSET` |
-| MySQL | `?` | backticks | `LIMIT/OFFSET` |
-| SQLite | `?` | `"double quotes"` | `LIMIT/OFFSET` |
-| SQL Server | `@p1, @p2` | `[brackets]` | `OFFSET/FETCH` |
+| Database   | Placeholders | Identifier Quoting | Pagination     |
+| ---------- | ------------ | ------------------ | -------------- |
+| PostgreSQL | `$1, $2`     | `"double quotes"`  | `LIMIT/OFFSET` |
+| MySQL      | `?`          | backticks          | `LIMIT/OFFSET` |
+| SQLite     | `?`          | `"double quotes"`  | `LIMIT/OFFSET` |
+| SQL Server | `@p1, @p2`   | `[brackets]`       | `OFFSET/FETCH` |
 
 ## Installation
 
@@ -24,7 +24,7 @@ npm install sql-flex-query
 ### 1. Simple SELECT with WHERE and Pagination
 
 ```javascript
-const { buildQueries } = require('sql-flex-query');
+const { buildQueries } = require("sql-flex-query");
 
 const BASE = `
   SELECT /*SELECT_COLUMNS*/
@@ -37,14 +37,15 @@ const BASE = `
 const result = buildQueries(
   BASE,
   [
-    { key: 'status', operation: 'EQ', value: 'ACTIVE' },
-    { key: 'age', operation: 'GTE', value: 18 },
+    { key: "status", operation: "EQ", value: "ACTIVE" },
+    { key: "age", operation: "GTE", value: 18 },
   ],
   [],
-  [{ key: 'createdAt', direction: 'DESC' }],
-  1, 10,
-  { createdAt: 'u.created_at' },
-  ['id', 'name', 'email', 'createdAt']
+  [{ key: "createdAt", direction: "DESC" }],
+  1,
+  10,
+  { createdAt: "u.created_at" },
+  ["id", "name", "email", "createdAt"],
 );
 // searchQuery: SELECT u.id AS "id", ... WHERE "status" = $1 AND u.created_at >= $2 ORDER BY ... LIMIT 10 OFFSET 0
 // params: ['ACTIVE', 18]
@@ -62,18 +63,23 @@ const result = buildQueries({
     /*LIMIT_CLAUSE*/
   `,
   textSearchParams: [
-    { key: 'name', operation: 'LIKE', value: '%laptop%', ignoreCase: true },
-    { key: 'description', operation: 'LIKE', value: '%laptop%', ignoreCase: true },
+    { key: "name", operation: "LIKE", value: "%laptop%", ignoreCase: true },
+    {
+      key: "description",
+      operation: "LIKE",
+      value: "%laptop%",
+      ignoreCase: true,
+    },
   ],
   whereParams: [
-    { key: 'status', operation: 'EQ', value: 'PUBLISHED' },
-    { key: 'price', operation: 'LTE', value: 2000 },
-    { key: 'deleted_at', operation: 'NULL' },
+    { key: "status", operation: "EQ", value: "PUBLISHED" },
+    { key: "price", operation: "LTE", value: 2000 },
+    { key: "deleted_at", operation: "NULL" },
   ],
-  sortBy: [{ key: 'price', direction: 'ASC' }],
+  sortBy: [{ key: "price", direction: "ASC" }],
   page: 1,
   size: 20,
-  dialect: 'postgres',
+  dialect: "postgres",
 });
 // WHERE (LOWER("name") LIKE $1 OR LOWER("description") LIKE $2)
 //   AND "status" = $3 AND "price" <= $4 AND "deleted_at" IS NULL
@@ -87,7 +93,7 @@ const result = buildQueries({
 ### 3. Multi-table JOIN with Column Mapping
 
 ```javascript
-const { buildQueries } = require('sql-flex-query');
+const { buildQueries } = require("sql-flex-query");
 
 const BASE = `
   SELECT /*SELECT_COLUMNS*/
@@ -101,42 +107,62 @@ const BASE = `
 `;
 
 const columnMapper = {
-  orderId:       'o.id',
-  orderDate:     'o.created_at',
-  orderStatus:   'o.status',
-  customerName:  'c.name',
-  customerEmail: 'c.email',
-  productName:   'p.name',
-  quantity:      'oi.quantity',
-  unitPrice:     'oi.unit_price',
+  orderId: "o.id",
+  orderDate: "o.created_at",
+  orderStatus: "o.status",
+  customerName: "c.name",
+  customerEmail: "c.email",
+  productName: "p.name",
+  quantity: "oi.quantity",
+  unitPrice: "oi.unit_price",
 };
 
 const result = buildQueries({
   baseQueryTemplate: BASE,
   columnMapper,
   selectColumns: [
-    'orderId', 'orderDate', 'orderStatus',
-    'customerName', 'customerEmail',
-    'productName', 'quantity', 'unitPrice',
+    "orderId",
+    "orderDate",
+    "orderStatus",
+    "customerName",
+    "customerEmail",
+    "productName",
+    "quantity",
+    "unitPrice",
   ],
   whereParams: [
-    { key: 'orderStatus', operation: 'IN', value: ['SHIPPED', 'DELIVERED'] },
-    { key: 'orderDate', operation: 'GTE', value: '2024-01-01' },
-    { key: 'orderDate', operation: 'LTE', value: '2024-12-31' },
-    { key: 'unitPrice', operation: 'GT', value: 0 },
+    { key: "orderStatus", operation: "IN", value: ["SHIPPED", "DELIVERED"] },
+    { key: "orderDate", operation: "GTE", value: "2024-01-01" },
+    { key: "orderDate", operation: "LTE", value: "2024-12-31" },
+    { key: "unitPrice", operation: "GT", value: 0 },
   ],
   textSearchParams: [
-    { key: 'customerName', operation: 'LIKE', value: '%john%', ignoreCase: true },
-    { key: 'customerEmail', operation: 'LIKE', value: '%john%', ignoreCase: true },
-    { key: 'productName', operation: 'LIKE', value: '%john%', ignoreCase: true },
+    {
+      key: "customerName",
+      operation: "LIKE",
+      value: "%john%",
+      ignoreCase: true,
+    },
+    {
+      key: "customerEmail",
+      operation: "LIKE",
+      value: "%john%",
+      ignoreCase: true,
+    },
+    {
+      key: "productName",
+      operation: "LIKE",
+      value: "%john%",
+      ignoreCase: true,
+    },
   ],
   sortBy: [
-    { key: 'orderDate', direction: 'DESC' },
-    { key: 'customerName', direction: 'ASC' },
+    { key: "orderDate", direction: "DESC" },
+    { key: "customerName", direction: "ASC" },
   ],
   page: 1,
   size: 25,
-  dialect: 'postgres',
+  dialect: "postgres",
 });
 
 // searchQuery:
@@ -160,7 +186,7 @@ const result = buildQueries({
 ### 4. GROUP BY + HAVING (Aggregation Reports)
 
 ```javascript
-const { buildQueries } = require('sql-flex-query');
+const { buildQueries } = require("sql-flex-query");
 
 // GROUP BY is part of the template.
 // The builder handles WHERE (before GROUP BY) and HAVING (after GROUP BY) automatically.
@@ -177,33 +203,39 @@ const BASE = `
 `;
 
 const columnMapper = {
-  customerName:  'c.name',
-  customerEmail: 'c.email',
-  orderCount:    'COUNT(DISTINCT o.id)',
-  totalSpent:    'SUM(oi.quantity * oi.unit_price)',
-  avgOrderValue: 'AVG(oi.quantity * oi.unit_price)',
-  orderDate:     'o.created_at',
-  orderStatus:   'o.status',
+  customerName: "c.name",
+  customerEmail: "c.email",
+  orderCount: "COUNT(DISTINCT o.id)",
+  totalSpent: "SUM(oi.quantity * oi.unit_price)",
+  avgOrderValue: "AVG(oi.quantity * oi.unit_price)",
+  orderDate: "o.created_at",
+  orderStatus: "o.status",
 };
 
 const result = buildQueries({
   baseQueryTemplate: BASE,
   columnMapper,
-  selectColumns: ['customerName', 'customerEmail', 'orderCount', 'totalSpent', 'avgOrderValue'],
+  selectColumns: [
+    "customerName",
+    "customerEmail",
+    "orderCount",
+    "totalSpent",
+    "avgOrderValue",
+  ],
   whereParams: [
     // WHERE filters — applied BEFORE GROUP BY
-    { key: 'orderStatus', operation: 'IN', value: ['COMPLETED', 'DELIVERED'] },
-    { key: 'orderDate', operation: 'GTE', value: '2024-01-01' },
-    { key: 'orderDate', operation: 'LTE', value: '2024-12-31' },
+    { key: "orderStatus", operation: "IN", value: ["COMPLETED", "DELIVERED"] },
+    { key: "orderDate", operation: "GTE", value: "2024-01-01" },
+    { key: "orderDate", operation: "LTE", value: "2024-12-31" },
 
     // HAVING filters — set having: true — applied AFTER GROUP BY
-    { key: 'orderCount', operation: 'GTE', value: 5, having: true },
-    { key: 'totalSpent', operation: 'GTE', value: 1000, having: true },
+    { key: "orderCount", operation: "GTE", value: 5, having: true },
+    { key: "totalSpent", operation: "GTE", value: 1000, having: true },
   ],
-  sortBy: [{ key: 'totalSpent', direction: 'DESC' }],
+  sortBy: [{ key: "totalSpent", direction: "DESC" }],
   page: 1,
   size: 10,
-  dialect: 'postgres',
+  dialect: "postgres",
 });
 
 // searchQuery:
@@ -245,32 +277,38 @@ const BASE_WITH_GROUP = `
 `;
 
 const columnMapper = {
-  createdDate: 'DATE(task.created_at)',
-  organizationCode: 'cs.org_code',
-  structured:  'msg.is_structured',
-  messageCount:  'COUNT(msg.id)',
-  locationName:  'loc.display_name',
-  state:      'msg.state',
+  createdDate: "DATE(task.created_at)",
+  organizationCode: "cs.org_code",
+  structured: "msg.is_structured",
+  messageCount: "COUNT(msg.id)",
+  locationName: "loc.display_name",
+  state: "msg.state",
 };
 
 const result = buildQueries({
   baseQueryTemplate: BASE_WITH_GROUP,
   columnMapper,
-  selectColumns: ['createdDate', 'organizationCode', 'structured', 'messageCount'],
+  selectColumns: [
+    "createdDate",
+    "organizationCode",
+    "structured",
+    "messageCount",
+  ],
   whereParams: [
-    { key: 'state', operation: 'EQ', value: 'PROCESSED' },
-    { key: 'locationName', operation: 'NOT_NULL' },
-    { key: 'messageCount', operation: 'GT', value: 10, having: true },
+    { key: "state", operation: "EQ", value: "PROCESSED" },
+    { key: "locationName", operation: "NOT_NULL" },
+    { key: "messageCount", operation: "GT", value: 10, having: true },
   ],
   sortBy: [
-    { key: 'createdDate', direction: 'DESC' },
-    { key: 'messageCount', direction: 'DESC' },
+    { key: "createdDate", direction: "DESC" },
+    { key: "messageCount", direction: "DESC" },
   ],
   page: 1,
   size: 20,
-  dialect: 'postgres',
+  dialect: "postgres",
   // Wrap count query to count groups, not rows within groups
-  modifyCountQuery: (query) => `SELECT COUNT(*) AS count FROM (${query}) AS grouped_count`,
+  modifyCountQuery: (query) =>
+    `SELECT COUNT(*) AS count FROM (${query}) AS grouped_count`,
 });
 
 // countQuery:
@@ -292,7 +330,7 @@ const result = buildQueries({
 ### 6. LEFT JOIN + DISTINCT (Fluent API)
 
 ```javascript
-const { QueryBuilder } = require('sql-flex-query');
+const { QueryBuilder } = require("sql-flex-query");
 
 const BASE = `
   SELECT /*SELECT_COLUMNS*/
@@ -305,33 +343,47 @@ const BASE = `
   /*LIMIT_CLAUSE*/
 `;
 
-const result = new QueryBuilder('postgres')
+const result = new QueryBuilder("postgres")
   .baseQuery(BASE)
   .columnMapper({
-    employeeId:     'e.id',
-    employeeName:   'e.name',
-    employeeEmail:  'e.email',
-    departmentName: 'd.name',
-    hireDate:       'e.hire_date',
-    salary:         'e.salary',
-    skillName:      's.name',
+    employeeId: "e.id",
+    employeeName: "e.name",
+    employeeEmail: "e.email",
+    departmentName: "d.name",
+    hireDate: "e.hire_date",
+    salary: "e.salary",
+    skillName: "s.name",
   })
-  .select(['employeeId', 'employeeName', 'employeeEmail', 'departmentName'])
+  .select(["employeeId", "employeeName", "employeeEmail", "departmentName"])
   .distinct()
   .where([
-    { key: 'departmentName', operation: 'IN', value: ['Engineering', 'Product', 'Design'] },
-    { key: 'hireDate', operation: 'GTE', value: '2023-01-01' },
-    { key: 'salary', operation: 'GTE', value: 50000 },
-    { key: 'salary', operation: 'LTE', value: 150000 },
+    {
+      key: "departmentName",
+      operation: "IN",
+      value: ["Engineering", "Product", "Design"],
+    },
+    { key: "hireDate", operation: "GTE", value: "2023-01-01" },
+    { key: "salary", operation: "GTE", value: 50000 },
+    { key: "salary", operation: "LTE", value: 150000 },
   ])
   .textSearch([
-    { key: 'employeeName', operation: 'LIKE', value: '%sarah%', ignoreCase: true },
-    { key: 'employeeEmail', operation: 'LIKE', value: '%sarah%', ignoreCase: true },
-    { key: 'skillName', operation: 'LIKE', value: '%sarah%', ignoreCase: true },
+    {
+      key: "employeeName",
+      operation: "LIKE",
+      value: "%sarah%",
+      ignoreCase: true,
+    },
+    {
+      key: "employeeEmail",
+      operation: "LIKE",
+      value: "%sarah%",
+      ignoreCase: true,
+    },
+    { key: "skillName", operation: "LIKE", value: "%sarah%", ignoreCase: true },
   ])
   .orderBy([
-    { key: 'departmentName', direction: 'ASC' },
-    { key: 'employeeName', direction: 'ASC' },
+    { key: "departmentName", direction: "ASC" },
+    { key: "employeeName", direction: "ASC" },
   ])
   .paginate(2, 15)
   .build();
@@ -356,7 +408,7 @@ const result = new QueryBuilder('postgres')
 ### 7. Sales Dashboard (Fluent API + GROUP BY + HAVING + MSSQL)
 
 ```javascript
-const { QueryBuilder } = require('sql-flex-query');
+const { QueryBuilder } = require("sql-flex-query");
 
 const BASE = `
   SELECT /*SELECT_COLUMNS*/
@@ -371,39 +423,49 @@ const BASE = `
   /*ORDER_BY*/ /*LIMIT_CLAUSE*/
 `;
 
-const result = new QueryBuilder('mssql')
+const result = new QueryBuilder("mssql")
   .baseQuery(BASE)
   .columnMapper({
-    regionName:   'r.name',
-    repName:      'sr.name',
-    categoryName: 'pc.name',
-    saleYear:     'YEAR(s.sale_date)',
-    saleMonth:    'MONTH(s.sale_date)',
-    totalRevenue: 'SUM(s.amount)',
-    totalUnits:   'SUM(s.quantity)',
-    dealCount:    'COUNT(s.id)',
-    avgDealSize:  'AVG(s.amount)',
-    saleDate:     's.sale_date',
-    saleStatus:   's.status',
+    regionName: "r.name",
+    repName: "sr.name",
+    categoryName: "pc.name",
+    saleYear: "YEAR(s.sale_date)",
+    saleMonth: "MONTH(s.sale_date)",
+    totalRevenue: "SUM(s.amount)",
+    totalUnits: "SUM(s.quantity)",
+    dealCount: "COUNT(s.id)",
+    avgDealSize: "AVG(s.amount)",
+    saleDate: "s.sale_date",
+    saleStatus: "s.status",
   })
   .select([
-    'regionName', 'repName', 'categoryName',
-    'saleYear', 'saleMonth',
-    'totalRevenue', 'totalUnits', 'dealCount', 'avgDealSize',
+    "regionName",
+    "repName",
+    "categoryName",
+    "saleYear",
+    "saleMonth",
+    "totalRevenue",
+    "totalUnits",
+    "dealCount",
+    "avgDealSize",
   ])
   .where([
-    { key: 'saleDate', operation: 'GTE', value: '2024-01-01' },
-    { key: 'saleDate', operation: 'LTE', value: '2024-12-31' },
-    { key: 'saleStatus', operation: 'EQ', value: 'CLOSED_WON' },
-    { key: 'regionName', operation: 'IN', value: ['North America', 'Europe', 'APAC'] },
+    { key: "saleDate", operation: "GTE", value: "2024-01-01" },
+    { key: "saleDate", operation: "LTE", value: "2024-12-31" },
+    { key: "saleStatus", operation: "EQ", value: "CLOSED_WON" },
+    {
+      key: "regionName",
+      operation: "IN",
+      value: ["North America", "Europe", "APAC"],
+    },
   ])
   .having([
-    { key: 'totalRevenue', operation: 'GTE', value: 50000 },
-    { key: 'dealCount', operation: 'GTE', value: 3 },
+    { key: "totalRevenue", operation: "GTE", value: 50000 },
+    { key: "dealCount", operation: "GTE", value: 3 },
   ])
   .orderBy([
-    { key: 'totalRevenue', direction: 'DESC' },
-    { key: 'regionName', direction: 'ASC' },
+    { key: "totalRevenue", direction: "DESC" },
+    { key: "regionName", direction: "ASC" },
   ])
   .paginate(1, 20)
   .modifyCountQuery((query) => `SELECT COUNT(*) AS count FROM (${query}) AS t`)
@@ -432,7 +494,7 @@ const result = new QueryBuilder('mssql')
 ### 8. Subquery JOIN with MySQL (Fluent API)
 
 ```javascript
-const { QueryBuilder } = require('sql-flex-query');
+const { QueryBuilder } = require("sql-flex-query");
 
 const BASE = `
   SELECT /*SELECT_COLUMNS*/
@@ -452,32 +514,53 @@ const BASE = `
   /*LIMIT_CLAUSE*/
 `;
 
-const result = new QueryBuilder('mysql')
+const result = new QueryBuilder("mysql")
   .baseQuery(BASE)
   .columnMapper({
-    userId:      'u.id',
-    userName:    'u.name',
-    userEmail:   'u.email',
-    loginCount:  'lh.login_count',
-    lastLogin:   'lh.last_login',
-    planName:    'p.name',
-    userStatus:  'u.status',
-    userRole:    'u.role',
+    userId: "u.id",
+    userName: "u.name",
+    userEmail: "u.email",
+    loginCount: "lh.login_count",
+    lastLogin: "lh.last_login",
+    planName: "p.name",
+    userStatus: "u.status",
+    userRole: "u.role",
   })
-  .select(['userId', 'userName', 'userEmail', 'loginCount', 'lastLogin', 'planName'])
+  .select([
+    "userId",
+    "userName",
+    "userEmail",
+    "loginCount",
+    "lastLogin",
+    "planName",
+  ])
   .where([
-    { key: 'userStatus', operation: 'EQ', value: 'ACTIVE' },
-    { key: 'loginCount', operation: 'GTE', value: 10 },
-    { key: 'userRole', operation: 'IN', value: ['ADMIN', 'PREMIUM', 'ENTERPRISE'] },
-    { key: 'planName', operation: 'NOT_NULL' },
+    { key: "userStatus", operation: "EQ", value: "ACTIVE" },
+    { key: "loginCount", operation: "GTE", value: 10 },
+    {
+      key: "userRole",
+      operation: "IN",
+      value: ["ADMIN", "PREMIUM", "ENTERPRISE"],
+    },
+    { key: "planName", operation: "NOT_NULL" },
   ])
   .textSearch([
-    { key: 'userName', operation: 'LIKE', value: '%search_term%', ignoreCase: true },
-    { key: 'userEmail', operation: 'LIKE', value: '%search_term%', ignoreCase: true },
+    {
+      key: "userName",
+      operation: "LIKE",
+      value: "%search_term%",
+      ignoreCase: true,
+    },
+    {
+      key: "userEmail",
+      operation: "LIKE",
+      value: "%search_term%",
+      ignoreCase: true,
+    },
   ])
   .orderBy([
-    { key: 'loginCount', direction: 'DESC' },
-    { key: 'lastLogin', direction: 'DESC' },
+    { key: "loginCount", direction: "DESC" },
+    { key: "lastLogin", direction: "DESC" },
   ])
   .paginate(1, 50)
   .build();
@@ -501,33 +584,210 @@ const result = new QueryBuilder('mysql')
 
 ---
 
+## Dialect Helpers for INSERT / UPDATE / DELETE
+
+The `dialectHelpers()` factory provides dialect-aware utilities for building **INSERT**, **UPDATE**, **DELETE**, and custom queries — without prescribing a specific pattern. You get the building blocks; you compose the final SQL.
+
+### 9. INSERT Query (Postgres)
+
+```javascript
+const { dialectHelpers } = require("sql-flex-query");
+
+const h = dialectHelpers("postgres");
+const columnMapper = { name: "u.name", email: "u.email", role: "u.role" };
+
+const data = { name: "John Doe", email: "john@example.com", role: "ADMIN" };
+const { columns, placeholders, params } = h.buildInsertValues(
+  data,
+  columnMapper,
+);
+
+const query = `INSERT INTO users (${columns.join(", ")}) VALUES (${placeholders.join(", ")}) RETURNING *`;
+// query:  INSERT INTO users (u.name, u.email, u.role) VALUES ($1, $2, $3) RETURNING *
+// params: ['John Doe', 'john@example.com', 'ADMIN']
+```
+
+**Same query with MySQL:**
+
+```javascript
+const h = dialectHelpers("mysql");
+const { columns, placeholders, params } = h.buildInsertValues(
+  data,
+  columnMapper,
+);
+
+const query = `INSERT INTO users (${columns.join(", ")}) VALUES (${placeholders.join(", ")})`;
+// query:  INSERT INTO users (u.name, u.email, u.role) VALUES (?, ?, ?)
+// params: ['John Doe', 'john@example.com', 'ADMIN']
+```
+
+### 10. UPDATE Query with WHERE (Postgres & MSSQL)
+
+Use `buildWhereClause` with `existingParams` — the same API you use for SELECT WHERE clauses. When you pass the SET `params` array, placeholder numbering continues automatically.
+
+```javascript
+const { dialectHelpers } = require("sql-flex-query");
+
+const h = dialectHelpers("postgres");
+const columnMapper = { name: "u.name", email: "u.email", id: "u.id" };
+
+// 1. Build SET clause
+const data = { name: "Jane Doe", email: "jane@example.com" };
+const { setClause, params } = h.buildSetClause(data, columnMapper);
+// setClause: 'u.name = $1, u.email = $2'
+// params:    ['Jane Doe', 'jane@example.com']
+
+// 2. Build WHERE — pass `params` so placeholders continue from $3
+const { clause } = h.buildWhereClause(
+  [{ key: "id", operation: "EQ", value: 42 }],
+  [],
+  columnMapper,
+  params, // ← same params array
+);
+
+const query = `UPDATE users SET ${setClause}${clause} RETURNING *`;
+// query:  UPDATE users SET u.name = $1, u.email = $2 WHERE u.id = $3 RETURNING *
+// params: ['Jane Doe', 'jane@example.com', 42]
+```
+
+**Same query with MSSQL:**
+
+```javascript
+const h = dialectHelpers("mssql");
+const { setClause, params } = h.buildSetClause(data, columnMapper);
+
+const { clause } = h.buildWhereClause(
+  [{ key: "id", operation: "EQ", value: 42 }],
+  [],
+  columnMapper,
+  params,
+);
+
+const query = `UPDATE users SET ${setClause}${clause}`;
+// query:  UPDATE users SET u.name = @p1, u.email = @p2 WHERE u.id = @p3
+// params: ['Jane Doe', 'jane@example.com', 42]
+```
+
+**UPDATE with complex WHERE (multiple criteria, IN, etc.):**
+
+```javascript
+const h = dialectHelpers("postgres");
+const columnMapper = {
+  status: "u.status",
+  role: "u.role",
+  lastLogin: "u.last_login",
+};
+
+const { setClause, params } = h.buildSetClause(
+  { status: "INACTIVE" },
+  columnMapper,
+);
+
+// Same buildWhereClause you'd use for SELECT — just pass params to continue numbering
+const { clause } = h.buildWhereClause(
+  [
+    { key: "role", operation: "IN", value: ["GUEST", "TRIAL"] },
+    { key: "lastLogin", operation: "LTE", value: "2023-01-01" },
+  ],
+  [],
+  columnMapper,
+  params,
+);
+
+const query = `UPDATE users SET ${setClause}${clause}`;
+// query:  UPDATE users SET u.status = $1 WHERE u.role IN ($2, $3) AND u.last_login <= $4
+// params: ['INACTIVE', 'GUEST', 'TRIAL', '2023-01-01']
+```
+
+### 11. DELETE Query with WHERE (Postgres)
+
+```javascript
+const { dialectHelpers } = require("sql-flex-query");
+
+const h = dialectHelpers("postgres");
+const columnMapper = {
+  id: "u.id",
+  status: "u.status",
+  deletedAt: "u.deleted_at",
+};
+
+const { clause, params } = h.buildWhereClause(
+  [
+    { key: "status", operation: "EQ", value: "DEACTIVATED" },
+    { key: "deletedAt", operation: "NOT_NULL" },
+  ],
+  [],
+  columnMapper,
+);
+
+const query = `DELETE FROM users${clause}`;
+// query:  DELETE FROM users WHERE u.status = $1 AND u.deleted_at IS NOT NULL
+// params: ['DEACTIVATED']
+```
+
+### Low-Level Helpers
+
+You can also import individual utilities for maximum flexibility:
+
+```javascript
+const {
+  createDialect,
+  getKey,
+  prepareWhereClause,
+  prepareClause,
+} = require("sql-flex-query");
+
+const dialect = createDialect("postgres");
+const mapper = { firstName: "u.first_name" };
+
+// Resolve column names
+getKey(mapper, "firstName", dialect); // 'u.first_name'
+getKey(mapper, "age", dialect); // '"age"' (auto-quoted)
+
+// Generate placeholder
+dialect.placeholder(1); // '$1'
+dialect.quoteIdentifier("name"); // '"name"'
+
+// Build a single clause
+const params = [];
+prepareClause(
+  { key: "status", operation: "EQ", value: "ACTIVE" },
+  params,
+  mapper,
+  dialect,
+);
+// returns: '"status" = $1',  params: ['ACTIVE']
+```
+
+---
+
 ## Template Placeholders Reference
 
-| Placeholder | Required | Description |
-|-------------|----------|-------------|
-| `/*SELECT_COLUMNS*/` | Yes | Replaced with column list or `*` |
-| `/*WHERE_CLAUSE*/` | Yes | Replaced with `WHERE ...` or empty string |
-| `/*ORDER_BY*/` | Yes | Replaced with `ORDER BY ...` or empty string |
-| `/*LIMIT_CLAUSE*/` | Yes | Replaced with pagination clause or empty string |
-| `/*HAVING_CLAUSE*/` | Optional | Replaced with `HAVING ...` (use with GROUP BY) |
+| Placeholder          | Required | Description                                     |
+| -------------------- | -------- | ----------------------------------------------- |
+| `/*SELECT_COLUMNS*/` | Yes      | Replaced with column list or `*`                |
+| `/*WHERE_CLAUSE*/`   | Yes      | Replaced with `WHERE ...` or empty string       |
+| `/*ORDER_BY*/`       | Yes      | Replaced with `ORDER BY ...` or empty string    |
+| `/*LIMIT_CLAUSE*/`   | Yes      | Replaced with pagination clause or empty string |
+| `/*HAVING_CLAUSE*/`  | Optional | Replaced with `HAVING ...` (use with GROUP BY)  |
 
 ---
 
 ## Operations Reference
 
-| Operation | SQL | Needs Value | Example |
-|-----------|-----|-------------|---------|
-| `EQ` | `col = ?` | Yes | `{ key: 'status', operation: 'EQ', value: 'ACTIVE' }` |
-| `NEQ` | `col <> ?` | Yes | `{ key: 'role', operation: 'NEQ', value: 'GUEST' }` |
-| `LIKE` | `col LIKE ?` | Yes | `{ key: 'name', operation: 'LIKE', value: '%john%' }` |
-| `NOT_LIKE` | `col NOT LIKE ?` | Yes | `{ key: 'email', operation: 'NOT_LIKE', value: '%spam%' }` |
-| `GT` | `col > ?` | Yes | `{ key: 'age', operation: 'GT', value: 18 }` |
-| `LT` | `col < ?` | Yes | `{ key: 'price', operation: 'LT', value: 100 }` |
-| `GTE` | `col >= ?` | Yes | `{ key: 'score', operation: 'GTE', value: 90 }` |
-| `LTE` | `col <= ?` | Yes | `{ key: 'weight', operation: 'LTE', value: 80 }` |
-| `IN` | `col IN (?, ?)` | Yes (array) | `{ key: 'status', operation: 'IN', value: ['A', 'B'] }` |
-| `NULL` | `col IS NULL` | No | `{ key: 'deleted_at', operation: 'NULL' }` |
-| `NOT_NULL` | `col IS NOT NULL` | No | `{ key: 'verified_at', operation: 'NOT_NULL' }` |
+| Operation  | SQL               | Needs Value | Example                                                    |
+| ---------- | ----------------- | ----------- | ---------------------------------------------------------- |
+| `EQ`       | `col = ?`         | Yes         | `{ key: 'status', operation: 'EQ', value: 'ACTIVE' }`      |
+| `NEQ`      | `col <> ?`        | Yes         | `{ key: 'role', operation: 'NEQ', value: 'GUEST' }`        |
+| `LIKE`     | `col LIKE ?`      | Yes         | `{ key: 'name', operation: 'LIKE', value: '%john%' }`      |
+| `NOT_LIKE` | `col NOT LIKE ?`  | Yes         | `{ key: 'email', operation: 'NOT_LIKE', value: '%spam%' }` |
+| `GT`       | `col > ?`         | Yes         | `{ key: 'age', operation: 'GT', value: 18 }`               |
+| `LT`       | `col < ?`         | Yes         | `{ key: 'price', operation: 'LT', value: 100 }`            |
+| `GTE`      | `col >= ?`        | Yes         | `{ key: 'score', operation: 'GTE', value: 90 }`            |
+| `LTE`      | `col <= ?`        | Yes         | `{ key: 'weight', operation: 'LTE', value: 80 }`           |
+| `IN`       | `col IN (?, ?)`   | Yes (array) | `{ key: 'status', operation: 'IN', value: ['A', 'B'] }`    |
+| `NULL`     | `col IS NULL`     | No          | `{ key: 'deleted_at', operation: 'NULL' }`                 |
+| `NOT_NULL` | `col IS NOT NULL` | No          | `{ key: 'verified_at', operation: 'NOT_NULL' }`            |
 
 ---
 
