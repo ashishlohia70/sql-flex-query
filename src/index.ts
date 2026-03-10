@@ -20,10 +20,14 @@ export { getKey, addQuotesIfMissing } from './utils/helpers';
 // Dialect classes
 export {
   createDialect,
+  registerDialect,
   PostgresDialect,
   MySQLDialect,
   SQLiteDialect,
   MSSQLDialect,
+  OracleDialect,
+  CockroachDialect,
+  SnowflakeDialect,
   BaseDialect,
 } from './dialects';
 

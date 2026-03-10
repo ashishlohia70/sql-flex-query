@@ -21,15 +21,20 @@
     "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm test"
   },
-  "keywords": [
-    "sql",
-    "query-builder",
-    "postgres",
-    "mysql",
-    "sqlite",
-    "mssql",
-    "pagination"
-  ],
+   "keywords": [
+     "sql",
+     "query-builder",
+     "postgres",
+     "mysql",
+     "sqlite",
+     "mssql",
+     "oracle",
+     "cockroachdb",
+     "snowflake",
+     "pagination",
+     "extensible",
+     "plugin"
+   ],
   "author": "Ashish Lohia",
   "license": "MIT",
   "devDependencies": {

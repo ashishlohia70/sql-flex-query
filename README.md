@@ -4,12 +4,15 @@ A lightweight, dialect-aware SQL query builder that enhances base query template
 
 ## Supported Databases
 
-| Database   | Placeholders | Identifier Quoting | Pagination     |
-| ---------- | ------------ | ------------------ | -------------- |
-| PostgreSQL | `$1, $2`     | `"double quotes"`  | `LIMIT/OFFSET` |
-| MySQL      | `?`          | backticks          | `LIMIT/OFFSET` |
-| SQLite     | `?`          | `"double quotes"`  | `LIMIT/OFFSET` |
-| SQL Server | `@p1, @p2`   | `[brackets]`       | `OFFSET/FETCH` |
+| Database    | Placeholders | Identifier Quoting | Pagination     |
+| ----------- | ------------ | ------------------ | -------------- |
+| PostgreSQL  | `$1, $2`     | `"double quotes"`  | `LIMIT/OFFSET` |
+| MySQL       | `?`          | backticks          | `LIMIT/OFFSET` |
+| SQLite      | `?`          | `"double quotes"`  | `LIMIT/OFFSET` |
+| SQL Server  | `@p1, @p2`   | `[brackets]`       | `OFFSET/FETCH` |
+| Oracle      | `:1, :2`     | `"double quotes"`  | `OFFSET/FETCH` |
+| CockroachDB | `$1, $2`     | `"double quotes"`  | `LIMIT/OFFSET` |
+| Snowflake   | `?`          | `"double quotes"`  | `LIMIT/OFFSET` |
 
 ## Installation
 
@@ -757,6 +760,56 @@ prepareClause(
   dialect,
 );
 // returns: '"status" = $1',  params: ['ACTIVE']
+```
+
+---
+
+## Extending with Custom Dialects
+
+You can add support for custom databases by extending the `BaseDialect` class and registering your dialect with `registerDialect()`.
+
+### Creating a Custom Dialect
+
+```typescript
+import { BaseDialect, DialectName } from 'sql-flex-query';
+
+class MyDialect extends BaseDialect {
+  name: DialectName = 'mydialect';
+
+  placeholder(position: number): string {
+    return `:${position}`; // e.g., :1, :2
+  }
+
+  quoteIdentifier(identifier: string): string {
+    return `"${identifier}"`; // double quotes
+  }
+
+  // Override if your DB has special pagination syntax
+  requiresOrderByForPagination: boolean = false;
+  mergesPaginationWithOrderBy: boolean = false;
+  // Use default LIMIT/OFFSET or override paginationClause()
+}
+
+// Register your dialect
+import { registerDialect } from 'sql-flex-query';
+registerDialect('mydialect', () => new MyDialect());
+
+// Now you can use it
+const result = buildQueries({
+  baseQueryTemplate: BASE,
+  whereParams: [...],
+  dialect: 'mydialect',
+});
+```
+
+### Using Custom Dialect Directly
+
+You can also instantiate dialects directly without registration:
+
+```typescript
+import { MyDialect } from "./my-dialect";
+const dialect = new MyDialect();
+const helpers = dialectHelpers(dialect); // or use dialect directly
 ```
 
 ---
