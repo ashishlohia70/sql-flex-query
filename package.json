@@ -1,6 +1,6 @@
 {
   "name": "sql-flex-query",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A lightweight, dialect-aware SQL query builder that enhances base query templates with dynamic WHERE, HAVING, ORDER BY, pagination, and more.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -21,15 +21,20 @@
     "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm test"
   },
-  "keywords": [
-    "sql",
-    "query-builder",
-    "postgres",
-    "mysql",
-    "sqlite",
-    "mssql",
-    "pagination"
-  ],
+   "keywords": [
+     "sql",
+     "query-builder",
+     "postgres",
+     "mysql",
+     "sqlite",
+     "mssql",
+     "oracle",
+     "cockroachdb",
+     "snowflake",
+     "pagination",
+     "extensible",
+     "plugin"
+   ],
   "author": "Ashish Lohia",
   "license": "MIT",
   "devDependencies": {

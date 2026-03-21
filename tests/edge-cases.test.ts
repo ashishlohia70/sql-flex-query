@@ -12,7 +12,7 @@ const BASE = `
 describe('Edge cases', () => {
   test('Unsupported dialect throws error', () => {
     expect(() => {
-      createDialect('oracle' as any);
+      createDialect('unsupported' as any);
     }).toThrow('Unsupported dialect');
   });
 

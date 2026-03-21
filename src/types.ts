@@ -11,7 +11,12 @@ export type Operation =
   | 'NULL'
   | 'NOT_NULL';
 
-export type DialectName = 'postgres' | 'mysql' | 'sqlite' | 'mssql';
+/**
+ * Built-in dialect names. For custom dialects, any string is allowed.
+ * Use the `registerDialect()` function to add custom dialects.
+ */
+export const KNOWN_DIALECTS = ['postgres', 'mysql', 'sqlite', 'mssql', 'oracle', 'cockroach', 'snowflake'] as const;
+export type DialectName = typeof KNOWN_DIALECTS[number] | string;
 
 export type SortDirection = 'ASC' | 'DESC';
 
