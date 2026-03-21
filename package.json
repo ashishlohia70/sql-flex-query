@@ -21,25 +21,29 @@
     "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm test"
   },
-   "keywords": [
-     "sql",
-     "query-builder",
-     "postgres",
-     "mysql",
-     "sqlite",
-     "mssql",
-     "oracle",
-     "cockroachdb",
-     "snowflake",
-     "pagination",
-     "extensible",
-     "plugin"
-   ],
+  "keywords": [
+    "sql",
+    "query-builder",
+    "postgres",
+    "mysql",
+    "sqlite",
+    "mssql",
+    "oracle",
+    "cockroachdb",
+    "snowflake",
+    "pagination",
+    "extensible",
+    "plugin"
+  ],
   "author": "Ashish Lohia",
-  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ashishlohia70/sql-flex-query"
+  },
   "devDependencies": {
     "tsup": "^8.4.0",
     "typescript": "^5.7.3",
     "vitest": "^4.0.18"
-  }
+  },
+  "license": "MIT"
 }

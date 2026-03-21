@@ -844,6 +844,12 @@ const helpers = dialectHelpers(dialect); // or use dialect directly
 
 ---
 
+## Demo Projects
+
+Check out the demo repository for complete working examples:
+
+[https://github.com/ashishlohia70/sql-flex-query-demo](https://github.com/ashishlohia70/sql-flex-query-demo)
+
 ## License
 
 MIT
