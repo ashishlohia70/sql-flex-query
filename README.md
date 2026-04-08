@@ -1,6 +1,8 @@
-# sql-flex-query
+# sql-flex-query [![npm version](https://img.shields.io/npm/v/sql-flex-query.svg)](https://www.npmjs.com/package/sql-flex-query) [![npm downloads](https://img.shields.io/npm/dm/sql-flex-query.svg)](https://www.npmjs.com/package/sql-flex-query) [![build](https://img.shields.io/github/actions/workflow/status/ashishlohia70/sql-flex-query/ci.yml?branch=main)](https://github.com/ashishlohia70/sql-flex-query/actions) [![license](https://img.shields.io/npm/l/sql-flex-query.svg)](https://github.com/ashishlohia70/sql-flex-query/blob/main/LICENSE)
 
-A lightweight, dialect-aware SQL query builder that enhances base query templates with dynamic WHERE, HAVING, ORDER BY, pagination, and more. Also provides helpers for building INSERT, UPDATE, and DELETE queries with dialect-specific placeholders.
+> A lightweight, dialect-aware SQL query builder that enhances base query templates with dynamic WHERE, HAVING, ORDER BY, pagination, and more. Also provides helpers for building INSERT, UPDATE, and DELETE queries with dialect-specific placeholders.
+
+**Write once, run on any SQL database** — PostgreSQL, MySQL, SQLite, SQL Server, Oracle, CockroachDB, Snowflake.
 
 ## Supported Databases
 
@@ -14,11 +16,99 @@ A lightweight, dialect-aware SQL query builder that enhances base query template
 | CockroachDB | `$1, $2`     | `"double quotes"`  | `LIMIT/OFFSET` |
 | Snowflake   | `?`          | `"double quotes"`  | `LIMIT/OFFSET` |
 
+## Why sql-flex-query?
+
+### The Problem
+Different SQL databases use different placeholder styles, identifier quoting, and pagination syntax:
+
+| Database | Placeholder | Identifier Quote | Pagination |
+|----------|-------------|------------------|------------|
+| PostgreSQL | `$1, $2` | `"double quotes"` | `LIMIT/OFFSET` |
+| MySQL | `?` | `` `backticks` `` | `LIMIT/OFFSET` |
+| SQLite | `?` | `"double quotes"` | `LIMIT/OFFSET` |
+| SQL Server | `@p1, @p2` | `[brackets]` | `OFFSET/FETCH` |
+| Oracle | `:1, :2` | `"double quotes"` | `OFFSET/FETCH` |
+| CockroachDB | `$1, $2` | `"double quotes"` | `LIMIT/OFFSET` |
+| Snowflake | `?` | `"double quotes"` | `LIMIT/OFFSET` |
+
+Maintaining separate queries for each dialect is error-prone and hard to maintain.
+
+### The Solution
+`sql-flex-query` lets you write **one query** that automatically adapts to any supported dialect. It handles:
+- ✅ Placeholder conversion (`$1` → `?` → `@p1`)
+- ✅ Identifier quoting (`"col"` → `` `col` `` → `[col]`)
+- ✅ Pagination syntax (`LIMIT/OFFSET` vs `OFFSET/FETCH`)
+- ✅ TypeScript type safety
+- ✅ Dynamic WHERE, ORDER BY, text search (OR conditions)
+- ✅ GROUP BY and HAVING support
+- ✅ Column mapping for clean code
+
+### Quick Comparison
+
+| Feature | sql-flex-query | Knex.js | Raw SQL | ORM (Prisma/TypeORM) |
+|---------|----------------|---------|---------|---------------------|
+| **Multi-dialect** | ✅ Automatic | ✅ Yes | ❌ Manual | ✅ Limited |
+| **Use existing SQL** | ✅ Yes | ❌ No | ✅ Yes | ❌ No |
+| **TypeScript support** | ✅ Full | ⚠️ Partial | ❌ None | ✅ Full |
+| **Learning curve** | 🟢 Low | 🟡 Medium | 🟢 Low | 🔴 High |
+| **Migrations** | ❌ No | ✅ Yes | ❌ No | ✅ Yes |
+| **Size** | ~15KB | ~100KB | 0KB | ~200KB+ |
+| **Flexibility** | 🟢 High | 🟡 Medium | 🟢 High | 🔴 Low |
+
+**Choose sql-flex-query if**: You need multi-dialect support, want to use your existing SQL, value TypeScript types, and don't need built-in migrations.
+
+---
+
 ## Installation
 
 ```bash
 npm install sql-flex-query
 ```
+
+---
+
+## Quick Start
+
+### 1. Simple Query with Filters
+
+```javascript
+const { buildQueries } = require("sql-flex-query");
+
+const BASE = `
+  SELECT /*SELECT_COLUMNS*/
+  FROM users u
+  /*WHERE_CLAUSE*/
+  /*ORDER_BY*/
+  /*LIMIT_CLAUSE*/
+`;
+
+const result = buildQueries(
+  BASE,
+  [
+    { key: "status", operation: "EQ", value: "ACTIVE" },
+    { key: "age", operation: "GTE", value: 18 },
+  ],
+  [],
+  [{ key: "createdAt", direction: "DESC" }],
+  1,  // page
+  10, // page size
+  { createdAt: "u.created_at" }, // columnMapper (optional)
+  ["id", "name", "email", "createdAt"], // selectColumns (optional)
+  "postgres" // dialect (optional, defaults to postgres)
+);
+
+console.log(result.searchQuery);
+// SELECT u.id AS "id", u.name AS "name", u.email AS "email", u.created_at AS "createdAt"
+// FROM users u
+// WHERE "status" = $1 AND "age" >= $2
+// ORDER BY u.created_at DESC
+// LIMIT 10 OFFSET 0
+
+console.log(result.params);
+// ['ACTIVE', 18]
+```
+
+That's it! The same code works for MySQL, SQLite, SQL Server, Oracle, CockroachDB, and Snowflake—just change the `dialect` parameter.
 
 ---
 
@@ -849,6 +939,18 @@ const helpers = dialectHelpers(dialect); // or use dialect directly
 Check out the demo repository for complete working examples:
 
 [https://github.com/ashishlohia70/sql-flex-query-demo](https://github.com/ashishlohia70/sql-flex-query-demo)
+
+---
+
+## Community & Support
+
+- **⭐ Star this repo**: If you find this library useful, please give it a star on [GitHub](https://github.com/ashishlohia70/sql-flex-query) — it helps others discover it!
+- **🐛 Report issues**: Found a bug or have a feature request? [Open an issue](https://github.com/ashishlohia70/sql-flex-query/issues).
+- **💬 Ask questions**: Use [GitHub Discussions](https://github.com/ashishlohia70/sql-flex-query/discussions) for Q&A.
+- **🔧 Contribute**: Pull requests are welcome! See [CONTRIBUTING.md](https://github.com/ashishlohia70/sql-flex-query/blob/main/CONTRIBUTING.md) for guidelines.
+- **📖 Follow updates**: Watch the repository or follow [@ashishlohia70](https://github.com/ashishlohia70) on GitHub.
+
+---
 
 ## License
 
