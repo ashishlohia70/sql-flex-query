@@ -6,6 +6,21 @@
 
 ## Supported Databases
 
+| Database    |
+| ----------- |
+| PostgreSQL  |
+| MySQL       |
+| SQLite      |
+| SQL Server  |
+| Oracle      |
+| CockroachDB |
+| Snowflake   |
+
+## Why sql-flex-query?
+
+### The Problem
+Different SQL databases use different placeholder styles, identifier quoting, and pagination syntax:
+
 | Database    | Placeholders | Identifier Quoting | Pagination     |
 | ----------- | ------------ | ------------------ | -------------- |
 | PostgreSQL  | `$1, $2`     | `"double quotes"`  | `LIMIT/OFFSET` |
@@ -15,21 +30,6 @@
 | Oracle      | `:1, :2`     | `"double quotes"`  | `OFFSET/FETCH` |
 | CockroachDB | `$1, $2`     | `"double quotes"`  | `LIMIT/OFFSET` |
 | Snowflake   | `?`          | `"double quotes"`  | `LIMIT/OFFSET` |
-
-## Why sql-flex-query?
-
-### The Problem
-Different SQL databases use different placeholder styles, identifier quoting, and pagination syntax:
-
-| Database | Placeholder | Identifier Quote | Pagination |
-|----------|-------------|------------------|------------|
-| PostgreSQL | `$1, $2` | `"double quotes"` | `LIMIT/OFFSET` |
-| MySQL | `?` | `` `backticks` `` | `LIMIT/OFFSET` |
-| SQLite | `?` | `"double quotes"` | `LIMIT/OFFSET` |
-| SQL Server | `@p1, @p2` | `[brackets]` | `OFFSET/FETCH` |
-| Oracle | `:1, :2` | `"double quotes"` | `OFFSET/FETCH` |
-| CockroachDB | `$1, $2` | `"double quotes"` | `LIMIT/OFFSET` |
-| Snowflake | `?` | `"double quotes"` | `LIMIT/OFFSET` |
 
 Maintaining separate queries for each dialect is error-prone and hard to maintain.
 
