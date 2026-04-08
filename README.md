@@ -2,7 +2,7 @@
 
 > A lightweight, dialect-aware SQL query builder that enhances base query templates with dynamic WHERE, HAVING, ORDER BY, pagination, and more. Also provides helpers for building INSERT, UPDATE, and DELETE queries with dialect-specific placeholders.
 
-**Write once, run on any SQL database** — PostgreSQL, MySQL, SQLite, SQL Server, Oracle, CockroachDB, Snowflake.
+**Write once, run on any SQL database** — PostgreSQL, MySQL, SQLite, SQL Server, Oracle, CockroachDB, Snowflake. Need another database? Extend `BaseDialect` to add custom dialect support (see below).
 
 ## Supported Databases
 
