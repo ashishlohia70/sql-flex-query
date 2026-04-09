@@ -64,7 +64,7 @@ describe('MySQL dialect', () => {
     expect(searchQuery).toContain('LIMIT 10 OFFSET 10');
   });
 
-  test('BETWEEN operation generates >= and <= with ? placeholders', () => {
+  test('BETWEEN operation generates >= and < with ? placeholders', () => {
     const where = [
       { key: 'price', operation: 'BETWEEN' as const, value: [100, 1000] },
     ];
@@ -72,7 +72,7 @@ describe('MySQL dialect', () => {
       BASE, where, [], [], 1, 10, {}, ['id'], false, null, dialectOpt
     );
     expect(params).toEqual([100, 1000]);
-    expect(searchQuery).toContain('`price` >= ? AND `price` <= ?');
+    expect(searchQuery).toContain('`price` >= ? AND `price` < ?');
   });
 
   test('Fluent API with MySQL', () => {
