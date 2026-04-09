@@ -85,6 +85,17 @@ describe('Snowflake dialect', () => {
     expect(countQuery).toContain('COUNT');
   });
 
+  test('BETWEEN operation generates >= and <= with ? placeholders', () => {
+    const where = [
+      { key: 'temperature', operation: 'BETWEEN' as const, value: [-10, 30] },
+    ];
+    const { searchQuery, params } = buildQueries(
+      BASE, where, [], [], 1, 10, {}, ['id'], false, null, dialectOpt
+    );
+    expect(params).toEqual([-10, 30]);
+    expect(searchQuery).toContain('"temperature" >= ? AND "temperature" <= ?');
+  });
+
   test('Fluent API with Snowflake', () => {
     const result = new QueryBuilder('snowflake')
       .baseQuery(BASE)
