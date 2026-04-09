@@ -85,6 +85,17 @@ describe('CockroachDB dialect', () => {
     expect(countQuery).toContain('COUNT');
   });
 
+  test('BETWEEN operation generates >= and < with $N placeholders', () => {
+    const where = [
+      { key: 'rating', operation: 'BETWEEN' as const, value: [3, 5] },
+    ];
+    const { searchQuery, params } = buildQueries(
+      BASE, where, [], [], 1, 10, {}, ['id'], false, null, dialectOpt
+    );
+    expect(params).toEqual([3, 5]);
+    expect(searchQuery).toContain('"rating" >= $1 AND "rating" < $2');
+  });
+
   test('Fluent API with CockroachDB', () => {
     const result = new QueryBuilder('cockroach')
       .baseQuery(BASE)

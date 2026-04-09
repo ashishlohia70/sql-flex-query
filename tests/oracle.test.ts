@@ -103,6 +103,17 @@ describe('Oracle dialect', () => {
     expect(params).toEqual([]);
   });
 
+  test('BETWEEN operation generates >= and < with :N placeholders', () => {
+    const where = [
+      { key: 'score', operation: 'BETWEEN' as const, value: [70, 90] },
+    ];
+    const { searchQuery, params } = buildQueries(
+      BASE, where, [], [], 1, 10, {}, ['id'], false, null, dialectOpt
+    );
+    expect(params).toEqual([70, 90]);
+    expect(searchQuery).toContain('"score" >= :1 AND "score" < :2');
+  });
+
   test('Fluent API with Oracle', () => {
     const result = new QueryBuilder('oracle')
       .baseQuery(BASE)

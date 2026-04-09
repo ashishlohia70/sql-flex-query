@@ -110,6 +110,17 @@ describe('Postgres dialect (default)', () => {
     expect(countQuery).toContain('COUNT(DISTINCT');
   });
 
+  test('BETWEEN operation generates >= and < with $N placeholders', () => {
+    const where = [
+      { key: 'age', operation: 'BETWEEN' as const, value: [18, 65] },
+      { key: 'score', operation: 'BETWEEN' as const, value: [50, 100] },
+    ];
+    const { searchQuery, params } = buildQueries(BASE, where, [], [], 1, 10, {}, ['id']);
+    expect(params).toEqual([18, 65, 50, 100]);
+    expect(searchQuery).toContain('"age" >= $1 AND "age" < $2');
+    expect(searchQuery).toContain('"score" >= $3 AND "score" < $4');
+  });
+
   test('Parameter numbering across textSearch + where + IN', () => {
     const text = [{ key: 'name', operation: 'LIKE' as const, value: '%sam%', ignoreCase: true }];
     const where = [

@@ -16,10 +16,10 @@ describe('Edge cases', () => {
     }).toThrow('Unsupported dialect');
   });
 
-  test('Unsupported operation throws error', () => {
+  test('BETWEEN operation validates input correctly', () => {
     expect(() => {
       buildQueries(BASE, [{ key: 'x', operation: 'BETWEEN' as any, value: 1 }]);
-    }).toThrow('Unsupported operation');
+    }).toThrow('BETWEEN operation requires an array of two values.');
   });
 
   test('IN with empty array (documents current behavior)', () => {

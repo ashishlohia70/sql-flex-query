@@ -40,6 +40,17 @@ describe('SQLite dialect', () => {
     expect(params).toEqual(['%john%']);
   });
 
+  test('BETWEEN operation generates >= and < with ? placeholders', () => {
+    const where = [
+      { key: 'score', operation: 'BETWEEN' as const, value: [0, 100] },
+    ];
+    const { searchQuery, params } = buildQueries(
+      BASE, where, [], [], 1, 10, {}, ['id'], false, null, dialectOpt
+    );
+    expect(params).toEqual([0, 100]);
+    expect(searchQuery).toContain('"score" >= ? AND "score" < ?');
+  });
+
   test('LIMIT/OFFSET pagination', () => {
     const { searchQuery } = buildQueries(
       BASE, [], [], [{ key: 'id', direction: 'ASC' }],

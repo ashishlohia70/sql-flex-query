@@ -1,24 +1,33 @@
 export type Operation =
-  | 'EQ'
-  | 'NEQ'
-  | 'LIKE'
-  | 'NOT_LIKE'
-  | 'GT'
-  | 'LT'
-  | 'GTE'
-  | 'LTE'
-  | 'IN'
-  | 'NULL'
-  | 'NOT_NULL';
+  | "EQ"
+  | "NEQ"
+  | "LIKE"
+  | "NOT_LIKE"
+  | "GT"
+  | "LT"
+  | "GTE"
+  | "LTE"
+  | "IN"
+  | "NULL"
+  | "NOT_NULL"
+  | "BETWEEN";
 
 /**
  * Built-in dialect names. For custom dialects, any string is allowed.
  * Use the `registerDialect()` function to add custom dialects.
  */
-export const KNOWN_DIALECTS = ['postgres', 'mysql', 'sqlite', 'mssql', 'oracle', 'cockroach', 'snowflake'] as const;
-export type DialectName = typeof KNOWN_DIALECTS[number] | string;
+export const KNOWN_DIALECTS = [
+  "postgres",
+  "mysql",
+  "sqlite",
+  "mssql",
+  "oracle",
+  "cockroach",
+  "snowflake",
+] as const;
+export type DialectName = (typeof KNOWN_DIALECTS)[number] | string;
 
-export type SortDirection = 'ASC' | 'DESC';
+export type SortDirection = "ASC" | "DESC";
 
 export interface Criteria {
   key: string;
@@ -66,5 +75,9 @@ export interface Dialect {
   lowerValue(value: string): string;
   requiresOrderByForPagination: boolean;
   mergesPaginationWithOrderBy: boolean;
-  orderByWithPagination(orderClause: string, page: number, size: number): string;
+  orderByWithPagination(
+    orderClause: string,
+    page: number,
+    size: number,
+  ): string;
 }

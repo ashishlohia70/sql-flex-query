@@ -71,6 +71,17 @@ describe('MSSQL dialect', () => {
     expect(countQuery).toContain('COUNT');
   });
 
+  test('BETWEEN operation generates >= and < with @pN placeholders', () => {
+    const where = [
+      { key: 'score', operation: 'BETWEEN' as const, value: [50, 100] },
+    ];
+    const { searchQuery, params } = buildQueries(
+      BASE, where, [], [], 1, 10, {}, ['id'], false, null, dialectOpt
+    );
+    expect(params).toEqual([50, 100]);
+    expect(searchQuery).toContain('[score] >= @p1 AND [score] < @p2');
+  });
+
   test('Fluent API with MSSQL', () => {
     const result = new QueryBuilder('mssql')
       .baseQuery(BASE)
