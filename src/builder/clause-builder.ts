@@ -58,7 +58,7 @@ export function prepareClause(
         throw new Error(`BETWEEN operation requires an array of two values.`);
       }
       params.push(value[0], value[1]);
-      return `${key} >= ${dialect.placeholder(params.length - 1)} AND ${key} <= ${dialect.placeholder(params.length)}`;
+      return `${key} >= ${dialect.placeholder(params.length - 1)} AND ${key} < ${dialect.placeholder(params.length)}`;
     }
     default:
       throw new Error(`Unsupported operation: ${operation}`);
