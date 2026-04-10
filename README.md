@@ -1,4 +1,4 @@
-# sql-flex-query [![npm version](https://img.shields.io/npm/v/sql-flex-query.svg)](https://www.npmjs.com/package/sql-flex-query) [![npm downloads](https://img.shields.io/npm/dm/sql-flex-query.svg)](https://www.npmjs.com/package/sql-flex-query) [![build](https://img.shields.io/github/actions/workflow/status/ashishlohia70/sql-flex-query/npm-publish.yml?branch=main)](https://github.com/ashishlohia70/sql-flex-query/actions) [![license](https://img.shields.io/npm/l/sql-flex-query.svg)](https://github.com/ashishlohia70/sql-flex-query/blob/main/LICENSE)
+# sql-flex-query [![npm version](https://img.shields.io/npm/v/sql-flex-query.svg)](https://www.npmjs.com/package/sql-flex-query) [![npm downloads](https://img.shields.io/npm/dm/sql-flex-query.svg)](https://www.npmjs.com/package/sql-flex-query) [![build](https://img.shields.io/github/actions/workflow/status/ashishlohia70/sql-flex-query/npm-publish.yml)](https://github.com/ashishlohia70/sql-flex-query/actions) [![license](https://img.shields.io/npm/l/sql-flex-query.svg)](https://github.com/ashishlohia70/sql-flex-query/blob/main/LICENSE)
 
 > A lightweight, dialect-aware SQL query builder that enhances base query templates with dynamic WHERE, HAVING, ORDER BY, pagination, and more. Also provides helpers for building INSERT, UPDATE, and DELETE queries with dialect-specific placeholders.
 
@@ -24,7 +24,7 @@ Different SQL databases use different placeholder styles, identifier quoting, an
 | Database    | Placeholders | Identifier Quoting | Pagination     |
 | ----------- | ------------ | ------------------ | -------------- |
 | PostgreSQL  | `$1, $2`     | `"double quotes"`  | `LIMIT/OFFSET` |
-| MySQL       | `?`          | backticks          | `LIMIT/OFFSET` |
+| MySQL       | `?`          | `` `backticks` ``  | `LIMIT/OFFSET` |
 | SQLite      | `?`          | `"double quotes"`  | `LIMIT/OFFSET` |
 | SQL Server  | `@p1, @p2`   | `[brackets]`       | `OFFSET/FETCH` |
 | Oracle      | `:1, :2`     | `"double quotes"`  | `OFFSET/FETCH` |
@@ -144,7 +144,35 @@ const result = buildQueries(
 // params: ['ACTIVE', 18]
 ```
 
-### 2. Text Search (OR) + Filters (AND)
+### 2. BETWEEN — Range Filtering
+
+Use `BETWEEN` to filter a column within a half-open range (`[min, max)`). Pass a two-element array as the value.
+
+```javascript
+const result = buildQueries({
+  baseQueryTemplate: `
+    SELECT /*SELECT_COLUMNS*/
+    FROM orders o
+    /*WHERE_CLAUSE*/
+    /*ORDER_BY*/
+    /*LIMIT_CLAUSE*/
+  `,
+  whereParams: [
+    // Matches: o.total >= 100 AND o.total < 500
+    { key: "total", operation: "BETWEEN", value: [100, 500] },
+    // Matches: o.created_at >= '2024-01-01' AND o.created_at < '2025-01-01'
+    { key: "createdAt", operation: "BETWEEN", value: ["2024-01-01", "2025-01-01"] },
+  ],
+  columnMapper: { total: "o.total", createdAt: "o.created_at" },
+  dialect: "postgres",
+});
+// WHERE (o.total >= $1 AND o.total < $2) AND (o.created_at >= $3 AND o.created_at < $4)
+// params: [100, 500, '2024-01-01', '2025-01-01']
+```
+
+> **Note:** `BETWEEN` generates `(col >= min AND col < max)` — inclusive lower bound, exclusive upper bound. The value must be an array of exactly two elements.
+
+### 3. Text Search (OR) + Filters (AND)
 
 ```javascript
 const result = buildQueries({
@@ -183,7 +211,7 @@ const result = buildQueries({
 
 ## Complex Examples
 
-### 3. Multi-table JOIN with Column Mapping
+### 4. Multi-table JOIN with Column Mapping
 
 ```javascript
 const { buildQueries } = require("sql-flex-query");
@@ -276,7 +304,7 @@ const result = buildQueries({
 // params: ['%john%', '%john%', '%john%', 'SHIPPED', 'DELIVERED', '2024-01-01', '2024-12-31', 0]
 ```
 
-### 4. GROUP BY + HAVING (Aggregation Reports)
+### 5. GROUP BY + HAVING (Aggregation Reports)
 
 ```javascript
 const { buildQueries } = require("sql-flex-query");
@@ -348,7 +376,7 @@ const result = buildQueries({
 // params: ['COMPLETED', 'DELIVERED', '2024-01-01', '2024-12-31', 5, 1000]
 ```
 
-### 5. GROUP BY with modifyCountQuery
+### 6. GROUP BY with modifyCountQuery
 
 When using GROUP BY, the default COUNT gives wrong results. Use modifyCountQuery to wrap the count:
 
@@ -420,7 +448,7 @@ const result = buildQueries({
 // ) AS grouped_count
 ```
 
-### 6. LEFT JOIN + DISTINCT (Fluent API)
+### 7. LEFT JOIN + DISTINCT (Fluent API)
 
 ```javascript
 const { QueryBuilder } = require("sql-flex-query");
@@ -498,7 +526,7 @@ const result = new QueryBuilder("postgres")
 //          '2023-01-01', 50000, 150000]
 ```
 
-### 7. Sales Dashboard (Fluent API + GROUP BY + HAVING + MSSQL)
+### 8. Sales Dashboard (Fluent API + GROUP BY + HAVING + MSSQL)
 
 ```javascript
 const { QueryBuilder } = require("sql-flex-query");
@@ -584,7 +612,7 @@ const result = new QueryBuilder("mssql")
 //          'North America', 'Europe', 'APAC', 50000, 3]
 ```
 
-### 8. Subquery JOIN with MySQL (Fluent API)
+### 9. Subquery JOIN with MySQL (Fluent API)
 
 ```javascript
 const { QueryBuilder } = require("sql-flex-query");
@@ -681,7 +709,7 @@ const result = new QueryBuilder("mysql")
 
 The `dialectHelpers()` factory provides dialect-aware utilities for building **INSERT**, **UPDATE**, **DELETE**, and custom queries — without prescribing a specific pattern. You get the building blocks; you compose the final SQL.
 
-### 9. INSERT Query (Postgres)
+### 10. INSERT Query (Postgres)
 
 ```javascript
 const { dialectHelpers } = require("sql-flex-query");
@@ -714,7 +742,7 @@ const query = `INSERT INTO users (${columns.join(", ")}) VALUES (${placeholders.
 // params: ['John Doe', 'john@example.com', 'ADMIN']
 ```
 
-### 10. UPDATE Query with WHERE (Postgres & MSSQL)
+### 11. UPDATE Query with WHERE (Postgres & MSSQL)
 
 Use `buildWhereClause` with `existingParams` — the same API you use for SELECT WHERE clauses. When you pass the SET `params` array, placeholder numbering continues automatically.
 
@@ -792,7 +820,7 @@ const query = `UPDATE users SET ${setClause}${clause}`;
 // params: ['INACTIVE', 'GUEST', 'TRIAL', '2023-01-01']
 ```
 
-### 11. DELETE Query with WHERE (Postgres)
+### 12. DELETE Query with WHERE (Postgres)
 
 ```javascript
 const { dialectHelpers } = require("sql-flex-query");
@@ -931,6 +959,7 @@ const helpers = dialectHelpers(dialect); // or use dialect directly
 | `IN`       | `col IN (?, ?)`   | Yes (array) | `{ key: 'status', operation: 'IN', value: ['A', 'B'] }`    |
 | `NULL`     | `col IS NULL`     | No          | `{ key: 'deleted_at', operation: 'NULL' }`                 |
 | `NOT_NULL` | `col IS NOT NULL` | No          | `{ key: 'verified_at', operation: 'NOT_NULL' }`            |
+| `BETWEEN`  | `col >= ? AND col < ?` | Yes (2-item array) | `{ key: 'age', operation: 'BETWEEN', value: [18, 65] }` |
 
 ---
 
