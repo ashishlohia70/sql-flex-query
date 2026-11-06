@@ -1,6 +1,6 @@
 import { DialectName, ColumnMapper, Criteria, Dialect } from '../types';
 import { createDialect } from '../dialects';
-import { getKey, addQuotesIfMissing } from '../utils/helpers';
+import { getKey, addQuotesIfMissing, toPaginationNumber } from '../utils/helpers';
 import { prepareClause, prepareWhereClause } from '../builder/clause-builder';
 
 /**
@@ -258,7 +258,10 @@ export function dialectHelpers(dialectName: DialectName): DialectHelperFunctions
     },
 
     paginationClause: (page: number, size: number) =>
-      dialect.paginationClause(page, size),
+      dialect.paginationClause(
+        toPaginationNumber(page, 'page'),
+        toPaginationNumber(size, 'size')
+      ),
 
     lowerFunction: (column: string) => dialect.lowerFunction(column),
 

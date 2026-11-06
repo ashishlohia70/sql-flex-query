@@ -80,9 +80,12 @@ npm install
 ### Running Tests
 
 ```bash
-npm test              # Run all tests once
-npm run test:watch    # Run tests in watch mode
+npm test                  # Run all tests once
+npm run test:watch        # Run tests in watch mode
+npm run test:integration  # Run only the SQLite integration tests
 ```
+
+The integration tests in `tests/integration/` run the generated SQL against a real in-memory SQLite database. They use Node's built-in `node:sqlite` module, so there's nothing extra to install. On Node versions older than 22.13 they're skipped automatically.
 
 ### Adding Tests
 
@@ -91,6 +94,7 @@ npm run test:watch    # Run tests in watch mode
 - Test both the generated SQL and the parameters
 - Test edge cases (empty arrays, null values, special characters)
 - Test all supported dialects for dialect-specific features
+- If your change affects which rows a query returns (operations, parameter order, pagination), add a case to `tests/integration/sqlite.integration.test.ts`. Compute the expected rows in plain JavaScript rather than with another SQL query.
 
 Example:
 

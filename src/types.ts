@@ -46,10 +46,62 @@ export interface ColumnMapper {
   [key: string]: string;
 }
 
+/**
+ * A cursor: either an opaque token produced by `encodeCursor()` /
+ * `buildCursorPage()`, or a plain object of sort-key values
+ * (e.g. `{ createdAt: '2024-01-01T00:00:00Z', id: 42 }`).
+ */
+export type CursorValue = string | Record<string, any>;
+
+/**
+ * Cursor-based (keyset) pagination input. Pass an empty object for the first page.
+ * Set `after` to fetch the page following a cursor, or `before` to fetch the
+ * page preceding it. `after` and `before` cannot be combined.
+ */
+export interface CursorPagination {
+  after?: CursorValue | null;
+  before?: CursorValue | null;
+}
+
+export type CursorDirection = 'forward' | 'backward';
+
+/**
+ * Returned on `BuildResult.cursorMeta` when cursor pagination is used.
+ * Pass the whole `BuildResult` to `buildCursorPage()` to turn fetched rows into a page.
+ */
+export interface CursorMeta {
+  /** Sort order as requested (not reversed for backward pages). */
+  sortBy: SortCriteria[];
+  /** Requested page size. The search query fetches `size + 1` rows to detect more pages. */
+  size: number;
+  direction: CursorDirection;
+  /** Whether an `after`/`before` cursor was supplied (false on the first page). */
+  hasCursor: boolean;
+}
+
+export interface CursorPage<T> {
+  /** At most `size` rows, always in the requested sort order. */
+  items: T[];
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  /** Pass as `after` to fetch the next page; null when there is none. */
+  nextCursor: string | null;
+  /** Pass as `before` to fetch the previous page; null when there is none. */
+  prevCursor: string | null;
+}
+
 export interface BuildResult {
   searchQuery: string;
   countQuery: string;
+  /** Parameters for `searchQuery`. */
   params: any[];
+  /**
+   * Parameters for `countQuery`. Identical to `params` unless a cursor is
+   * applied: the count query reports the total and excludes the cursor condition.
+   */
+  countParams: any[];
+  /** Present only when cursor pagination is used. */
+  cursorMeta?: CursorMeta;
 }
 
 export interface BuildOptions {
@@ -64,6 +116,12 @@ export interface BuildOptions {
   distinct?: boolean;
   modifyCountQuery?: ((query: string) => string) | null;
   dialect?: DialectName;
+  /**
+   * Enables cursor-based (keyset) pagination instead of page/offset.
+   * Requires `sortBy`, whose last key should be unique (e.g. `id`). `size` sets
+   * the page size and `page` is ignored.
+   */
+  cursor?: CursorPagination;
 }
 
 export interface Dialect {

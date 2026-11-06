@@ -19,6 +19,7 @@
     "build": "tsup",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run tests/integration",
     "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [

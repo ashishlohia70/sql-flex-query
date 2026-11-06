@@ -2,6 +2,10 @@
 export { buildQueries } from './builder/build-queries';
 export { QueryBuilder } from './builder/query-builder';
 
+// Cursor (keyset) pagination
+export { buildCursorPage } from './builder/cursor';
+export { encodeCursor, decodeCursor } from './utils/cursor-codec';
+
 // Dialect helpers for INSERT/UPDATE/custom queries
 export { dialectHelpers } from './helpers/dialect-helpers';
 
@@ -12,6 +16,7 @@ export {
   prepareHavingClause,
   prepareSelect,
   prepareOrderClause,
+  prepareCursorClause,
 } from './builder/clause-builder';
 
 // Utility functions
@@ -42,6 +47,11 @@ export type {
   DialectName,
   Operation,
   SortDirection,
+  CursorValue,
+  CursorPagination,
+  CursorDirection,
+  CursorMeta,
+  CursorPage,
 } from './types';
 
 export type {

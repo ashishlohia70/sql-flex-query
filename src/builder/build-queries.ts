@@ -5,6 +5,7 @@ import {
   BuildResult,
   BuildOptions,
   DialectName,
+  CursorPagination,
 } from '../types';
 import { createDialect } from '../dialects';
 import {
@@ -12,7 +13,10 @@ import {
   prepareHavingClause,
   prepareSelect,
   prepareOrderClause,
+  prepareCursorClause,
 } from './clause-builder';
+import { resolveCursor, reverseSort } from './cursor';
+import { toPaginationNumber } from '../utils/helpers';
 
 export function buildQueries(options: BuildOptions): BuildResult;
 export function buildQueries(
@@ -44,6 +48,7 @@ export function buildQueries(
 ): BuildResult {
   let baseQueryTemplate: string;
   let dialectName: DialectName;
+  let cursor: CursorPagination | undefined;
 
   if (typeof baseQueryTemplateOrOptions === 'object') {
     const opts = baseQueryTemplateOrOptions;
@@ -58,36 +63,84 @@ export function buildQueries(
     distinct = opts.distinct || false;
     modifyCountQuery = opts.modifyCountQuery || null;
     dialectName = opts.dialect || 'postgres';
+    cursor = opts.cursor;
   } else {
     baseQueryTemplate = baseQueryTemplateOrOptions;
     dialectName = dialectOptions?.dialect || 'postgres';
   }
 
+  // Validate before any dialect sees them: custom dialects may interpolate as-is.
+  page = toPaginationNumber(page, 'page');
+  size = toPaginationNumber(size, 'size');
+
   const dialect = createDialect(dialectName);
+  const resolvedCursor = cursor ? resolveCursor(cursor, sortBy, size) : null;
 
   const params: any[] = [];
   const havingCriteria = whereParams.filter((w) => w.having);
   const whereCriteria = whereParams.filter((w) => !w.having);
 
-  const whereClause = prepareWhereClause(
+  // Param order must follow textual order: text search, where, cursor, having.
+  const filterWhereClause = prepareWhereClause(
     whereCriteria,
     textSearchParams,
     params,
     columnMapper,
     dialect
   );
+  const cursorClause = resolvedCursor?.values
+    ? prepareCursorClause(
+        sortBy,
+        resolvedCursor.values,
+        resolvedCursor.direction,
+        params,
+        columnMapper,
+        dialect
+      )
+    : '';
+  const whereClause = !cursorClause
+    ? filterWhereClause
+    : filterWhereClause
+      ? `${filterWhereClause} AND ${cursorClause}`
+      : ` WHERE ${cursorClause}`;
   const havingClause = prepareHavingClause(havingCriteria, params, columnMapper, dialect);
-  const orderClause = prepareOrderClause(sortBy, columnMapper, dialect);
+
+  // The count query reports the total, so it excludes the cursor condition and
+  // needs its own params (placeholder positions shift without the cursor values).
+  let countWhereClause = whereClause;
+  let countHavingClause = havingClause;
+  let countParams = [...params];
+  if (cursorClause) {
+    countParams = [];
+    countWhereClause = prepareWhereClause(
+      whereCriteria,
+      textSearchParams,
+      countParams,
+      columnMapper,
+      dialect
+    );
+    countHavingClause = prepareHavingClause(havingCriteria, countParams, columnMapper, dialect);
+  }
+
+  // Backward pages read in reverse order; buildCursorPage() flips the rows back.
+  const effectiveSort =
+    resolvedCursor?.direction === 'backward' ? reverseSort(sortBy) : sortBy;
+  const orderClause = prepareOrderClause(effectiveSort, columnMapper, dialect);
+
+  // Cursor mode always reads from the seek position: first "page", size + 1 rows
+  // (the extra row tells buildCursorPage() whether another page exists).
+  const pageNumber = resolvedCursor ? 1 : page;
+  const pageSize = resolvedCursor ? size + 1 : size;
 
   let orderAndPagination: string;
   let limitClause: string;
 
   if (dialect.mergesPaginationWithOrderBy) {
-    orderAndPagination = dialect.orderByWithPagination(orderClause, page, size);
+    orderAndPagination = dialect.orderByWithPagination(orderClause, pageNumber, pageSize);
     limitClause = '';
   } else {
     orderAndPagination = orderClause;
-    limitClause = dialect.paginationClause(page, size);
+    limitClause = dialect.paginationClause(pageNumber, pageSize);
     if (limitClause) {
       limitClause = ` ${limitClause}`;
     }
@@ -116,8 +169,8 @@ export function buildQueries(
 
   let countQuery = baseQueryTemplate
     .replace('/*SELECT_COLUMNS*/', countExpr)
-    .replace('/*WHERE_CLAUSE*/', whereClause)
-    .replace('/*HAVING_CLAUSE*/', havingClause)
+    .replace('/*WHERE_CLAUSE*/', countWhereClause)
+    .replace('/*HAVING_CLAUSE*/', countHavingClause)
     .replace('/*ORDER_BY*/', '')
     .replace('/*LIMIT_CLAUSE*/', '')
     .trim();
@@ -126,5 +179,14 @@ export function buildQueries(
     countQuery = modifyCountQuery(countQuery);
   }
 
-  return { searchQuery, countQuery, params };
+  const result: BuildResult = { searchQuery, countQuery, params, countParams };
+  if (resolvedCursor) {
+    result.cursorMeta = {
+      sortBy: sortBy.map((s) => ({ ...s })),
+      size,
+      direction: resolvedCursor.direction,
+      hasCursor: resolvedCursor.values !== null,
+    };
+  }
+  return result;
 }

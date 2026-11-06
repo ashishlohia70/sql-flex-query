@@ -1,4 +1,5 @@
 import { Dialect, DialectName } from '../types';
+import { toPaginationNumber } from '../utils/helpers';
 
 export abstract class BaseDialect implements Dialect {
   abstract name: DialectName;
@@ -17,6 +18,8 @@ export abstract class BaseDialect implements Dialect {
   mergesPaginationWithOrderBy: boolean = false;
 
   paginationClause(page: number, size: number): string {
+    page = toPaginationNumber(page, 'page');
+    size = toPaginationNumber(size, 'size');
     if (!page || !size) {
       return '';
     }

@@ -1,5 +1,6 @@
 import { Dialect, DialectName } from '../types';
 import { BaseDialect } from './base.dialect';
+import { toPaginationNumber } from '../utils/helpers';
 
 /**
  * Oracle Database dialect (12c+)
@@ -26,6 +27,8 @@ export class OracleDialect extends BaseDialect {
   mergesPaginationWithOrderBy: boolean = true;
 
   paginationClause(page: number, size: number): string {
+    page = toPaginationNumber(page, 'page');
+    size = toPaginationNumber(size, 'size');
     if (!page || !size) {
       return '';
     }

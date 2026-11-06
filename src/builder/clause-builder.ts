@@ -1,4 +1,10 @@
-import { Criteria, SortCriteria, ColumnMapper, Dialect } from "../types";
+import {
+  Criteria,
+  SortCriteria,
+  ColumnMapper,
+  Dialect,
+  CursorDirection,
+} from "../types";
 import { getKey } from "../utils/helpers";
 
 export function prepareClause(
@@ -42,7 +48,16 @@ export function prepareClause(
       params.push(value);
       return `${key} <= ${dialect.placeholder(params.length)}`;
     case "IN": {
-      const values = value as any[];
+      if (!Array.isArray(value)) {
+        throw new Error(`IN operation requires an array of values.`);
+      }
+      if (value.length === 0) {
+        // `IN ()` is a syntax error in PostgreSQL, MySQL, MSSQL, Oracle and others.
+        // An empty list matches nothing; `1 = 0` says so portably (no boolean literals
+        // in MSSQL/Oracle) and pushes no params, so later placeholders stay aligned.
+        return "1 = 0";
+      }
+      const values = value;
       const placeholders = values
         .map((_, i) => dialect.placeholder(params.length + i + 1))
         .join(", ");
@@ -134,6 +149,59 @@ export function prepareSelect(
       : "*";
 
   return distinct ? `DISTINCT ${columns}` : columns;
+}
+
+/**
+ * Builds the keyset condition that selects rows strictly after (`forward`) or
+ * before (`backward`) a cursor position, in the order given by `sortBy`.
+ *
+ * Uses the expanded form, which works on every dialect and with mixed directions:
+ *   sortBy [createdAt DESC, id ASC], forward →
+ *   ("createdAt" < $1 OR ("createdAt" = $2 AND "id" > $3))
+ *
+ * Values are pushed onto `params` (repeated per branch, so `?` dialects work).
+ * `cursorValues` must contain a value for every sort key.
+ */
+export function prepareCursorClause(
+  sortBy: SortCriteria[],
+  cursorValues: Record<string, any>,
+  direction: CursorDirection,
+  params: any[],
+  columnMapper: ColumnMapper,
+  dialect: Dialect,
+): string {
+  const branches: string[] = [];
+
+  for (let i = 0; i < sortBy.length; i++) {
+    const parts: string[] = [];
+    for (let j = 0; j < i; j++) {
+      const { key } = sortBy[j];
+      parts.push(
+        prepareClause(
+          { key, operation: "EQ", value: cursorValues[key] },
+          params,
+          columnMapper,
+          dialect,
+        ),
+      );
+    }
+
+    const { key, direction: sortDirection } = sortBy[i];
+    const ascending = String(sortDirection).toUpperCase() !== "DESC";
+    const greaterThan = ascending === (direction === "forward");
+    parts.push(
+      prepareClause(
+        { key, operation: greaterThan ? "GT" : "LT", value: cursorValues[key] },
+        params,
+        columnMapper,
+        dialect,
+      ),
+    );
+
+    branches.push(parts.length > 1 ? `(${parts.join(" AND ")})` : parts[0]);
+  }
+
+  return `(${branches.join(" OR ")})`;
 }
 
 export function prepareOrderClause(
