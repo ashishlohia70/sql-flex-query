@@ -961,6 +961,8 @@ const helpers = dialectHelpers(dialect); // or use dialect directly
 | `NOT_NULL` | `col IS NOT NULL` | No          | `{ key: 'verified_at', operation: 'NOT_NULL' }`            |
 | `BETWEEN`  | `col >= ? AND col < ?` | Yes (2-item array) | `{ key: 'age', operation: 'BETWEEN', value: [18, 65] }` |
 
+> **Note:** `IN` with an empty array generates `1 = 0`, a condition that matches no rows. Most databases reject `IN ()` as a syntax error, so this keeps the query valid on every dialect. Inside a text-search (`OR`) group the empty `IN` contributes nothing, and the other conditions still match.
+
 ---
 
 ## Demo Projects

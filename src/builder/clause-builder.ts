@@ -42,7 +42,16 @@ export function prepareClause(
       params.push(value);
       return `${key} <= ${dialect.placeholder(params.length)}`;
     case "IN": {
-      const values = value as any[];
+      if (!Array.isArray(value)) {
+        throw new Error(`IN operation requires an array of values.`);
+      }
+      if (value.length === 0) {
+        // `IN ()` is a syntax error in PostgreSQL, MySQL, MSSQL, Oracle and others.
+        // An empty list matches nothing; `1 = 0` says so portably (no boolean literals
+        // in MSSQL/Oracle) and pushes no params, so later placeholders stay aligned.
+        return "1 = 0";
+      }
+      const values = value;
       const placeholders = values
         .map((_, i) => dialect.placeholder(params.length + i + 1))
         .join(", ");
