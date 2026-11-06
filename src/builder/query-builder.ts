@@ -5,6 +5,7 @@ import {
   BuildResult,
   DialectName,
   SortDirection,
+  CursorPagination,
 } from '../types';
 import { buildQueries } from './build-queries';
 
@@ -20,6 +21,7 @@ export class QueryBuilder {
   private _selectColumns: string[] = [];
   private _distinct: boolean = false;
   private _modifyCountQuery: ((query: string) => string) | null = null;
+  private _cursor: CursorPagination | null = null;
 
   constructor(dialect: DialectName = 'postgres') {
     this._dialect = dialect;
@@ -70,9 +72,26 @@ export class QueryBuilder {
     return this;
   }
 
+  /** Page/offset pagination (1-based page). Replaces any earlier cursorPaginate(). */
   paginate(page: number, size: number): this {
     this._page = page;
     this._size = size;
+    this._cursor = null;
+    return this;
+  }
+
+  /**
+   * Cursor-based (keyset) pagination. Replaces any earlier paginate().
+   * Requires orderBy()/sortBy(); end the sort with a unique column such as id.
+   * The search query fetches `size + 1` rows: pass them to buildCursorPage().
+   *
+   * @param size - Page size
+   * @param cursor - `{}` (or omitted) for the first page, `{ after }` for the next page, `{ before }` for the previous page
+   */
+  cursorPaginate(size: number, cursor: CursorPagination = {}): this {
+    this._page = 0;
+    this._size = size;
+    this._cursor = cursor;
     return this;
   }
 
@@ -103,6 +122,7 @@ export class QueryBuilder {
       distinct: this._distinct,
       modifyCountQuery: this._modifyCountQuery,
       dialect: this._dialect,
+      cursor: this._cursor ?? undefined,
     });
   }
 
@@ -117,6 +137,7 @@ export class QueryBuilder {
     this._selectColumns = [];
     this._distinct = false;
     this._modifyCountQuery = null;
+    this._cursor = null;
     return this;
   }
 }

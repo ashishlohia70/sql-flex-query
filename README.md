@@ -38,6 +38,7 @@ Maintaining separate queries for each dialect is error-prone and hard to maintai
 - ✅ Placeholder conversion (`$1` → `?` → `@p1`)
 - ✅ Identifier quoting (`"col"` → `` `col` `` → `[col]`)
 - ✅ Pagination syntax (`LIMIT/OFFSET` vs `OFFSET/FETCH`)
+- ✅ Cursor-based (keyset) pagination for large or fast-changing tables
 - ✅ TypeScript type safety
 - ✅ Dynamic WHERE, ORDER BY, text search (OR conditions)
 - ✅ GROUP BY and HAVING support
@@ -702,6 +703,94 @@ const result = new QueryBuilder("mysql")
 //
 // params: ['%search_term%', '%search_term%', 'ACTIVE', 10, 'ADMIN', 'PREMIUM', 'ENTERPRISE']
 ```
+
+---
+
+## Cursor-Based (Keyset) Pagination
+
+Offset pagination (`page`/`size`) gets slower on deep pages, because the database still reads every skipped row. It also skips or repeats rows when data changes between requests. Cursor pagination avoids both problems: it seeks past the last row you saw (`WHERE (created_at, id) < (...)`), so every page costs the same and stays stable while rows are inserted.
+
+It works with every built-in dialect and with mixed `ASC`/`DESC` sort orders.
+
+### Fetching pages
+
+```javascript
+const { QueryBuilder, buildCursorPage } = require("sql-flex-query");
+
+const BASE = `
+  SELECT /*SELECT_COLUMNS*/
+  FROM orders o
+  /*WHERE_CLAUSE*/
+  /*ORDER_BY*/
+  /*LIMIT_CLAUSE*/
+`;
+
+async function listOrders(cursor) {
+  const result = new QueryBuilder("postgres")
+    .baseQuery(BASE)
+    .columnMapper({ id: "o.id", createdAt: "o.created_at", total: "o.total", status: "o.status" })
+    .select(["id", "createdAt", "total"])
+    .where({ key: "status", operation: "EQ", value: "PAID" })
+    .orderBy([
+      { key: "createdAt", direction: "DESC" },
+      { key: "id", direction: "DESC" }, // unique tie-breaker
+    ])
+    .cursorPaginate(20, cursor) // {} | { after: token } | { before: token }
+    .build();
+
+  const { rows } = await pool.query(result.searchQuery, result.params);
+  return buildCursorPage(rows, result);
+}
+
+const page1 = await listOrders({});
+// { items: [...20 rows], hasNextPage: true, hasPreviousPage: false,
+//   nextCursor: 'eyJjcmVhdGVkQXQiOnsiJGRhdGUiOi...', prevCursor: null }
+
+const page2 = await listOrders({ after: page1.nextCursor });
+const backToPage1 = await listOrders({ before: page2.prevCursor });
+```
+
+The second request generates:
+
+```sql
+SELECT o.id AS "id", o.created_at AS "createdAt", o.total AS "total"
+FROM orders o
+WHERE o.status = $1 AND (o.created_at < $2 OR (o.created_at = $3 AND o.id < $4))
+ORDER BY o.created_at DESC, o.id DESC
+LIMIT 21 OFFSET 0
+-- params: ['PAID', 2024-06-01T10:00:00.000Z, 2024-06-01T10:00:00.000Z, 3]
+```
+
+With the options-object API, pass `cursor` and `size`:
+
+```javascript
+const result = buildQueries({
+  baseQueryTemplate: BASE,
+  sortBy: [{ key: "id", direction: "ASC" }],
+  size: 20,
+  cursor: { after: req.query.cursor }, // or {} for the first page
+});
+```
+
+### How it works
+
+- **One extra row:** the search query fetches `size + 1` rows. `buildCursorPage()` uses the extra row to set `hasNextPage` (or `hasPreviousPage`), then drops it.
+- **Backward pages:** a `before` page is read in reverse order. `buildCursorPage()` puts the rows back in the requested order.
+- **Count query:** `countQuery` returns the **total** row count and leaves out the cursor condition. Run it with `countParams`, not `params`:
+  ```javascript
+  const total = await pool.query(result.countQuery, result.countParams);
+  ```
+- **Cursor format:** cursors are opaque, URL-safe base64 tokens holding the last row's sort-key values. `Date` values survive the round trip as `Date`. You can also pass a plain object such as `{ after: { id: 42 } }`, or build tokens yourself with `encodeCursor()` / `decodeCursor()`.
+
+### Rules and caveats
+
+- **End `sortBy` with a unique column** (usually `id`). If two rows share the same sort values, rows at a page boundary can be skipped or repeated.
+- **Sort columns must be `NOT NULL`.** SQL can't compare `NULL` with `<` or `>`, so a cursor containing `null` is rejected.
+- **Select every sort key under its own name.** `buildCursorPage()` reads each key from the rows. `selectColumns` together with `columnMapper` aliases them for you (`o.created_at AS "createdAt"`). A table-qualified key such as `u.id` is read from the row's `id` field.
+- **Sort keys must be plain columns, not aggregates.** The cursor condition goes in `WHERE`, so it can't refer to an aggregate like `COUNT(...)`.
+- **Timestamps:** JavaScript `Date` has millisecond precision. If your column stores microseconds (as PostgreSQL `timestamp` does), the unique tie-breaker is what keeps pages correct.
+- **Clients can read and edit cursors.** Tokens are encoded, not encrypted or signed. This is safe because the library binds cursor values as parameters, never splices them into SQL, and accepts only string, number, boolean, bigint and `Date` values. Even so, don't use secret columns as sort keys.
+- **`page` is ignored** in cursor mode, and `size` must be a positive integer.
 
 ---
 
