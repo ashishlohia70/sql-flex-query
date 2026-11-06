@@ -1,5 +1,6 @@
 import { DialectName } from '../types';
 import { BaseDialect } from './base.dialect';
+import { toPaginationNumber } from '../utils/helpers';
 
 export class MSSQLDialect extends BaseDialect {
   name: DialectName = 'mssql';
@@ -15,6 +16,8 @@ export class MSSQLDialect extends BaseDialect {
   }
 
   paginationClause(page: number, size: number): string {
+    page = toPaginationNumber(page, 'page');
+    size = toPaginationNumber(size, 'size');
     if (!page || !size) {
       return '';
     }

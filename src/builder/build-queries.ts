@@ -13,6 +13,7 @@ import {
   prepareSelect,
   prepareOrderClause,
 } from './clause-builder';
+import { toPaginationNumber } from '../utils/helpers';
 
 export function buildQueries(options: BuildOptions): BuildResult;
 export function buildQueries(
@@ -62,6 +63,10 @@ export function buildQueries(
     baseQueryTemplate = baseQueryTemplateOrOptions;
     dialectName = dialectOptions?.dialect || 'postgres';
   }
+
+  // Validate before any dialect sees them: custom dialects may interpolate as-is.
+  page = toPaginationNumber(page, 'page');
+  size = toPaginationNumber(size, 'size');
 
   const dialect = createDialect(dialectName);
 
